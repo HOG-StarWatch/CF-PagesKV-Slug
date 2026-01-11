@@ -1,0 +1,13 @@
+{
+  "name": "slug-shortener",
+  "version": "1.0.0",
+  "description": "URL Shortener using Cloudflare Pages and KV",
+  "scripts": {
+    "dev": "wrangler pages dev public",
+    "deploy": "wrangler pages deploy public"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}

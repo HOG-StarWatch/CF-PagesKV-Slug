@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudLink - 智能短链生成</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔗</text></svg>">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --text-main: #1f2937;
+            --text-sub: #6b7280;
+            --border: #e5e7eb;
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --primary: #6366f1;
+                --primary-hover: #818cf8;
+                --bg-gradient: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+                --card-bg: rgba(31, 41, 55, 0.95);
+                --text-main: #f9fafb;
+                --text-sub: #9ca3af;
+                --border: #374151;
+                --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+            }
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            padding: 2.5rem;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 480px;
+            border: 1px solid var(--border);
+            transition: transform 0.2s;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 0 0 0.5rem 0;
+            background: linear-gradient(to right, var(--primary), #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            color: var(--text-sub);
+            margin: 0;
+            font-size: 0.95rem;
+        }
+
+        .input-group {
+            margin-bottom: 1.25rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            color: var(--text-main);
+            font-size: 1rem;
+            transition: all 0.2s;
+            box-sizing: border-box;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .options-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            color: var(--text-sub);
+            font-size: 0.875rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            margin: 1rem 0;
+            transition: color 0.2s;
+        }
+
+        .options-toggle:hover {
+            color: var(--primary);
+        }
+
+        .advanced-options {
+            display: none;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+            margin-top: 0.5rem;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        .advanced-options.show {
+            display: block;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        button.primary-btn {
+            width: 100%;
+            padding: 0.875rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        button.primary-btn:hover {
+            background: var(--primary-hover);
+        }
+
+        button.primary-btn:active {
+            transform: scale(0.98);
+        }
+
+        button.primary-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        #resultBox {
+            margin-top: 1.5rem;
+            padding: 1.5rem;
+            background: rgba(79, 70, 229, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(79, 70, 229, 0.1);
+            text-align: center;
+            display: none;
+        }
+
+        #resultBox.active {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .short-url {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-decoration: none;
+            word-break: break-all;
+            display: block;
+            margin: 1rem 0;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
+        .secondary-btn {
+            padding: 0.5rem 1rem;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        .secondary-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        #qrcode {
+            margin: 1.5rem auto;
+            padding: 1rem;
+            background: white;
+            border-radius: 8px;
+            width: fit-content;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .footer {
+            margin-top: 2rem;
+            color: var(--text-sub);
+            font-size: 0.875rem;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #10b981;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            font-size: 0.875rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+
+        .toast.error {
+            background: #ef4444;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        .quick-expire {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .quick-expire button {
+            flex: 1;
+            padding: 0.4rem;
+            font-size: 0.85rem;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            color: var(--text-sub);
+            transition: all 0.2s;
+        }
+        
+        .quick-expire button:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: rgba(79, 70, 229, 0.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>CloudLink</h1>
+            <p>专业的短链接生成服务</p>
+        </div>
+        
+        <div class="input-group">
+            <label for="urlInput">原始链接</label>
+            <input type="url" id="urlInput" placeholder="https://example.com/very-long-url..." required autofocus>
+        </div>
+
+        <div class="options-toggle" onclick="toggleAdvanced()">
+            <span>⚙️ 高级设置</span>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M2 4L6 8L10 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+
+        <div class="advanced-options" id="advancedOptions">
+            <div class="input-group">
+                <label for="customSlug">自定义后缀 (可选)</label>
+                <input type="text" id="customSlug" placeholder="如: my-link (留空随机生成)">
+            </div>
+            
+            <div class="input-group">
+                <label for="password">访问密码 (可选)</label>
+                <input type="text" id="password" placeholder="设置访问密码">
+            </div>
+
+            <div class="input-group">
+                <label for="maxClicks">访问次数限制 (可选)</label>
+                <input type="number" id="maxClicks" min="1" placeholder="达到次数后自动失效">
+            </div>
+
+            <div class="input-group">
+                <label for="expiration">过期时间 (可选)</label>
+                <input type="datetime-local" id="expiration">
+                <div class="quick-expire">
+                    <button type="button" onclick="setExpire(1)">1天</button>
+                    <button type="button" onclick="setExpire(3)">3天</button>
+                    <button type="button" onclick="setExpire(7)">7天</button>
+                    <button type="button" onclick="setExpire(30)">30天</button>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>二维码样式</label>
+                <div style="display: flex; gap: 1rem;">
+                    <div style="flex: 1;">
+                        <label for="qrColorDark" style="font-size: 0.8rem; margin-bottom: 0.25rem; color: var(--text-sub);">前景色</label>
+                        <input type="color" id="qrColorDark" value="#000000" style="width: 100%; height: 40px; padding: 2px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer;">
+                    </div>
+                    <div style="flex: 1;">
+                        <label for="qrColorLight" style="font-size: 0.8rem; margin-bottom: 0.25rem; color: var(--text-sub);">背景色</label>
+                        <input type="color" id="qrColorLight" value="#ffffff" style="width: 100%; height: 40px; padding: 2px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button onclick="shortenUrl()" id="submitBtn" class="primary-btn">立即生成</button>
+        
+        <div id="resultBox">
+            <div style="color: #10b981; font-weight: 500;">✨ 生成成功</div>
+            <a href="#" target="_blank" class="short-url" id="shortUrlDisplay"></a>
+            
+            <div id="qrcode"></div>
+            
+            <div class="action-buttons">
+                <button onclick="copyUrl()" class="secondary-btn">复制链接</button>
+                <button onclick="downloadQRCode()" class="secondary-btn">下载二维码</button>
+                <button onclick="window.location.reload()" class="secondary-btn">再来一个</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        Powered by Cloudflare Pages
+    </div>
+
+    <div id="toast" class="toast">消息提示</div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script>
+        function toggleAdvanced() {
+            const el = document.getElementById('advancedOptions');
+            el.classList.toggle('show');
+        }
+
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.className = 'toast show ' + (type === 'error' ? 'error' : '');
+            setTimeout(() => {
+                toast.className = 'toast';
+            }, 3000);
+        }
+
+        async function shortenUrl() {
+            const urlInput = document.getElementById('urlInput');
+            const customSlug = document.getElementById('customSlug').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const maxClicks = document.getElementById('maxClicks').value;
+            const expiration = document.getElementById('expiration').value;
+            
+            const btn = document.getElementById('submitBtn');
+            const resultBox = document.getElementById('resultBox');
+            
+            const url = urlInput.value.trim();
+
+            if (!url) {
+                showToast('请输入有效的 URL', 'error');
+                urlInput.focus();
+                return;
+            }
+
+            try {
+                new URL(url);
+            } catch (e) {
+                showToast('URL 格式不正确，请包含 http:// 或 https://', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '生成中...';
+            resultBox.classList.remove('active');
+
+            try {
+                const payload = {
+                    url,
+                    slug: customSlug || undefined,
+                    password: password || undefined,
+                    maxClicks: maxClicks || undefined,
+                    expirationTime: expiration ? new Date(expiration).getTime() : undefined
+                };
+
+                const response = await fetch('/api/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || '请求失败');
+                }
+
+                const shortUrl = window.location.origin + '/' + data.slug;
+                
+                document.getElementById('shortUrlDisplay').href = shortUrl;
+                document.getElementById('shortUrlDisplay').textContent = shortUrl;
+                
+                // Generate QR Code
+                const qrcodeContainer = document.getElementById('qrcode');
+                qrcodeContainer.innerHTML = '';
+                new QRCode(qrcodeContainer, {
+                    text: shortUrl,
+                    width: 128,
+                    height: 128,
+                    colorDark : "#000000",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.H
+                });
+
+                resultBox.classList.add('active');
+                showToast('短链生成成功！');
+                
+            } catch (error) {
+                showToast(error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '立即生成';
+            }
+        }
+
+        function copyUrl() {
+            const url = document.getElementById('shortUrlDisplay').textContent;
+            navigator.clipboard.writeText(url).then(() => {
+                showToast('链接已复制到剪贴板');
+            }).catch(() => {
+                showToast('复制失败，请手动复制', 'error');
+            });
+        }
+
+        function setExpire(days) {
+            const date = new Date();
+            date.setDate(date.getDate() + days);
+            const offset = date.getTimezoneOffset() * 60000;
+            const localDate = new Date(date.getTime() - offset);
+            document.getElementById('expiration').value = localDate.toISOString().slice(0, 16);
+        }
+
+        function downloadQRCode() {
+            const qrcode = document.getElementById('qrcode');
+            const img = qrcode.querySelector('img');
+            if (img) {
+                const link = document.createElement('a');
+                link.href = img.src;
+                link.download = 'qrcode.png';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+    </script>
+</body>
+</html>

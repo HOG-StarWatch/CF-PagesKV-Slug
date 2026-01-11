@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudLink 管理面板</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔗</text></svg>">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --text-main: #1f2937;
+            --text-sub: #6b7280;
+            --border: #e5e7eb;
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --primary: #6366f1;
+                --primary-hover: #818cf8;
+                --bg-gradient: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+                --card-bg: rgba(31, 41, 55, 0.95);
+                --text-main: #f9fafb;
+                --text-sub: #9ca3af;
+                --border: #374151;
+                --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+                --danger: #f87171;
+                --danger-hover: #ef4444;
+            }
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            margin: 0;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            min-height: 400px;
+        }
+
+        .login-box {
+            max-width: 400px;
+            margin: 10vh auto;
+            padding: 3rem;
+            text-align: center;
+        }
+
+        .header {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0,0,0,0.02);
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            background: linear-gradient(to right, var(--primary), #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        input[type="password"] {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            margin: 1rem 0;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            color: var(--text-main);
+            box-sizing: border-box;
+            font-size: 1rem;
+        }
+
+        button {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            width: 100%;
+            font-size: 1rem;
+        }
+
+        .btn-primary:hover { background: var(--primary-hover); }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .btn-danger:hover { background: var(--danger-hover); }
+        
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+        }
+        
+        .btn-outline:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .toolbar {
+            padding: 1rem 2rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 1rem 2rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: rgba(0,0,0,0.02);
+            font-weight: 600;
+            color: var(--text-sub);
+            font-size: 0.9rem;
+        }
+
+        td {
+            font-size: 0.95rem;
+        }
+
+        .slug-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .url-cell {
+            max-width: 300px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text-sub);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem;
+            color: var(--text-sub);
+        }
+
+        .checkbox-cell {
+            width: 40px;
+            padding-right: 0;
+            text-align: center;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #10b981;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            font-size: 0.875rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 1000;
+        }
+        .toast.error { background: #ef4444; }
+        .toast.show { opacity: 1; }
+
+        .selected-count {
+            font-size: 0.9rem;
+            color: var(--text-sub);
+            margin-left: auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="login" class="container login-box">
+        <div style="margin-bottom: 2rem;">
+            <h1>CloudLink Admin</h1>
+            <p style="color: var(--text-sub);">请输入管理员密钥以继续</p>
+        </div>
+        <input type="password" id="adminKey" placeholder="Admin Key" onkeyup="if(event.key==='Enter') login()">
+        <button class="btn-primary" onclick="login()">登录</button>
+    </div>
+
+    <div id="panel" class="container" style="display: none;">
+        <div class="header">
+            <h1>CloudLink 管理面板</h1>
+            <button class="btn-outline" onclick="logout()">退出登录</button>
+        </div>
+        
+        <div class="toolbar">
+            <button class="btn-danger" id="batchDeleteBtn" onclick="deleteSelected()" style="display: none;">
+                批量删除
+            </button>
+            <button class="btn-outline" onclick="loadLinks()">
+                🔄 刷新列表
+            </button>
+            <span class="selected-count" id="selectedCount"></span>
+        </div>
+
+        <div id="loading" style="text-align: center; padding: 2rem; color: var(--text-sub);">
+            加载中...
+        </div>
+
+        <table id="linksTable" style="display: none;">
+            <thead>
+                <tr>
+                    <th class="checkbox-cell">
+                        <input type="checkbox" id="selectAll" onclick="toggleSelectAll()">
+                    </th>
+                    <th>短链 (Slug)</th>
+                    <th>原始链接</th>
+                    <th>点击数</th>
+                    <th>创建时间</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="linksBody"></tbody>
+        </table>
+        
+        <div id="emptyState" class="empty-state" style="display: none;">
+            暂无短链数据
+        </div>
+    </div>
+
+    <div id="toast" class="toast">消息提示</div>
+
+    <script>
+        const API_BASE = '/api';
+        let currentLinks = [];
+
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.className = 'toast show ' + (type === 'error' ? 'error' : '');
+            setTimeout(() => toast.className = 'toast', 3000);
+        }
+
+        function login() {
+            const key = document.getElementById('adminKey').value.trim();
+            if (key) {
+                localStorage.setItem('adminKey', key);
+                checkAuth();
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('adminKey');
+            location.reload();
+        }
+
+        function checkAuth() {
+            const key = localStorage.getItem('adminKey');
+            if (key) {
+                document.getElementById('login').style.display = 'none';
+                document.getElementById('panel').style.display = 'block';
+                loadLinks();
+            }
+        }
+
+        async function loadLinks() {
+            const key = localStorage.getItem('adminKey');
+            const loading = document.getElementById('loading');
+            const table = document.getElementById('linksTable');
+            const tbody = document.getElementById('linksBody');
+            const emptyState = document.getElementById('emptyState');
+            
+            loading.style.display = 'block';
+            table.style.display = 'none';
+            emptyState.style.display = 'none';
+            tbody.innerHTML = '';
+            
+            try {
+                const res = await fetch(`${API_BASE}/list`, {
+                    headers: { 'X-Admin-Key': key }
+                });
+                
+                if (res.status === 401) {
+                    showToast('Admin Key 无效或已过期', 'error');
+                    setTimeout(logout, 1500);
+                    return;
+                }
+                
+                const data = await res.json();
+                currentLinks = data.links || [];
+                
+                if (currentLinks.length > 0) {
+                    renderTable(currentLinks);
+                    table.style.display = 'table';
+                } else {
+                    emptyState.style.display = 'block';
+                }
+            } catch (e) {
+                showToast('加载失败: ' + e.message, 'error');
+            } finally {
+                loading.style.display = 'none';
+                updateSelectionState();
+            }
+        }
+
+        function renderTable(links) {
+            const tbody = document.getElementById('linksBody');
+            tbody.innerHTML = links.map(link => {
+                const date = link.created ? new Date(link.created).toLocaleString() : '-';
+                return `
+                    <tr>
+                        <td class="checkbox-cell">
+                            <input type="checkbox" class="link-checkbox" value="${link.slug}" onchange="updateSelectionState()">
+                        </td>
+                        <td><a href="/${link.slug}" target="_blank" class="slug-link">${link.slug}</a></td>
+                        <td class="url-cell" title="${link.url}">${link.url}</td>
+                        <td>${link.clicks}</td>
+                        <td style="color: var(--text-sub); font-size: 0.85rem;">${date}</td>
+                        <td>
+                            <button class="btn-outline" style="padding: 4px 8px; font-size: 0.8rem; color: var(--danger); border-color: var(--border);" 
+                                onclick="deleteSingle('${link.slug}')">删除</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function toggleSelectAll() {
+            const checked = document.getElementById('selectAll').checked;
+            document.querySelectorAll('.link-checkbox').forEach(cb => cb.checked = checked);
+            updateSelectionState();
+        }
+
+        function updateSelectionState() {
+            const selected = document.querySelectorAll('.link-checkbox:checked').length;
+            const btn = document.getElementById('batchDeleteBtn');
+            const countLabel = document.getElementById('selectedCount');
+            
+            if (selected > 0) {
+                btn.style.display = 'inline-block';
+                btn.textContent = `批量删除 (${selected})`;
+                countLabel.textContent = `已选 ${selected} 项`;
+            } else {
+                btn.style.display = 'none';
+                countLabel.textContent = '';
+            }
+        }
+
+        async function deleteSingle(slug) {
+            // 移除单一删除的确认弹窗，直接删除（或者为了安全保留一个轻量级确认？）
+            // 用户要求“减少确认弹窗”，但删除操作通常还是需要确认的。
+            // 我们可以用一个非模态的方式，或者依然保留 confirm 但文字简洁。
+            // 这里为了安全还是保留 confirm，但批量删除时只确认一次。
+            if (!confirm(`确认删除 /${slug} ?`)) return;
+            await performDelete([slug]);
+        }
+
+        async function deleteSelected() {
+            const selected = Array.from(document.querySelectorAll('.link-checkbox:checked')).map(cb => cb.value);
+            if (selected.length === 0) return;
+            
+            if (!confirm(`确定要删除选中的 ${selected.length} 个短链吗？此操作不可恢复。`)) return;
+            await performDelete(selected);
+        }
+
+        async function performDelete(slugs) {
+            const key = localStorage.getItem('adminKey');
+            try {
+                const res = await fetch(`${API_BASE}/delete`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-Admin-Key': key
+                    },
+                    body: JSON.stringify({ slugs }) // Send array for batch support
+                });
+                
+                if (res.ok) {
+                    showToast(`成功删除 ${slugs.length} 个短链`);
+                    loadLinks();
+                    document.getElementById('selectAll').checked = false;
+                } else {
+                    showToast('删除失败', 'error');
+                }
+            } catch (e) {
+                showToast('错误: ' + e.message, 'error');
+            }
+        }
+
+        // Check auth on load
+        if (localStorage.getItem('adminKey')) {
+            checkAuth();
+        }
+    </script>
+</body>
+</html>
