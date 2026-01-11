@@ -35,8 +35,8 @@ npm install -g wrangler
 ### 2. 克隆项目
 
 ```bash
-git clone https://github.com/yourusername/cloudlink.git
-cd cloudlink
+git clone https://github.com/HOG-StarWatch/CF-PagesKV-Slug.git
+cd CF-PagesKV-Slug
 npm install
 ```
 
