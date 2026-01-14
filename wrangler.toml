@@ -1,10 +1,10 @@
 name = "slug"
 pages_build_output_dir = "public"
 
-[[kv_namespaces]]
-binding = "LINKS"
-id = "YOUR_KV_NAMESPACE_ID"
-preview_id = "YOUR_PREVIEW_KV_NAMESPACE_ID"
+# [[kv_namespaces]]
+# binding = "LINKS"
+# id = "YOUR_KV_NAMESPACE_ID"
+# preview_id = "YOUR_PREVIEW_KV_NAMESPACE_ID"
 
 [vars]
 # ADMIN_KEY = "123456" # 请在 Cloudflare Dashboard 设置或使用 `wrangler secret put ADMIN_KEY`，不要在代码中硬编码

@@ -1,14 +1,14 @@
 # CloudLink - 智能短链生成服务
 
- ![Cloudflare Pages](https://img.shields.io/badge/Cloudflare-Pages-orange.svg) ![KV Storage](https://img.shields.io/badge/Storage-KV-yellow.svg)
+![Cloudflare Pages](https://img.shields.io/badge/Cloudflare-Pages-orange.svg) ![KV Storage](https://img.shields.io/badge/Storage-KV-yellow.svg)
 
 CloudLink 是一个基于 **Cloudflare Pages** 和 **KV Storage** 构建的现代化、无服务器短链接生成平台。它轻量、快速且无需自行维护服务器，支持自定义短链、密码保护、访问统计、二维码生成等丰富功能。
 
 ## ✨ 核心特性
 
 - **🚀 极速部署**：基于 Cloudflare 边缘网络，全球访问低延迟。
-- **🔗 智能短链**：支持随机生成或自定义短链后缀。
-- **🔒 安全保护**：支持为链接设置访问密码。
+- **🔗 智能短链**：支持随机生成或自定义短链后缀（仅限字母、数字、下划线、连字符）。
+- **🔒 安全保护**：支持为链接设置访问密码；管理后台防 XSS 攻击；API 接口鉴权。
 - **⏱️ 有效期管理**：支持自定义过期时间（1天/3天/7天/30天或指定日期）。
 - **🔢 访问控制**：支持设置最大访问次数，达到限制自动销毁。
 - **📱 二维码生成**：生成短链的同时生成二维码，支持自定义前景色和背景色。
@@ -22,68 +22,69 @@ CloudLink 是一个基于 **Cloudflare Pages** 和 **KV Storage** 构建的现�
 - **存储**：Cloudflare Workers KV
 - **工具**：Wrangler CLI
 
-## 🚀 快速开始
+## 🚀 部署指南 (推荐)
 
-### 1. 准备工作
+最简单的方式是通过 **Cloudflare Pages** 直接连接你的 Git 仓库进行部署。
 
-确保你已经安装了 [Node.js](https://nodejs.org/) 和 [Wrangler](https://developers.cloudflare.com/workers/wrangler/install-and-update/)。
+### 1. 准备仓库
+Fork 本仓库或将其上传到你的 GitHub/GitLab 账户。
 
-```bash
-npm install -g wrangler
-```
+### 2. 创建 Cloudflare Pages 项目
+1. 登录 [Cloudflare Dashboard](https://dash.cloudflare.com/)。
+2. 进入 **Workers & Pages** -> **Create application** -> **Pages** -> **Connect to Git**。
+3. 选择你的仓库，点击 **Begin setup**。
 
-### 2. 克隆项目
+### 3. 配置构建设置
+- **Project name**: 自定义你的项目名称（如 `my-slug`）。
+- **Production branch**: `main` (或 master)。
+- **Framework preset**: `None` (或者选 Cloudflare Pages)。
+- **Build command**: `npm install` (可选，如果不需要构建过程可留空，但在某些环境下推荐加上)。
+- **Build output directory**: `public`。
 
-```bash
-git clone https://github.com/HOG-StarWatch/CF-PagesKV-Slug.git
-cd CF-PagesKV-Slug
-npm install
-```
+### 4. 配置环境变量与 KV (关键步骤)
+在部署完成前或完成后，进入项目的 **Settings** 页面进行配置：
 
-### 3. 配置 Cloudflare KV
+#### A. 环境变量 (Environment variables)
+进入 **Settings** -> **Environment variables**，添加变量：
+- **Variable name**: `ADMIN_KEY`
+- **Value**: 设置一个强密码（用于管理后台登录和 API 鉴权）
 
-你需要创建一个 KV Namespace 来存储短链数据。
+#### B. KV 命名空间绑定 (KV Namespace bindings)
+进入 **Settings** -> **Functions** -> **KV Namespace bindings**，点击 **Add binding**：
+- **Variable name**: `LINKS` (必须大写，完全一致)
+- **KV Namespace**: 选择一个现有的 KV 空间，或者点击 "Create new KV namespace" 创建一个新的（如 `slug-db`）。
 
-```bash
-# 创建生产环境 KV
-npx wrangler kv:namespace create LINKS
+### 5. 完成部署
+保存所有设置后，前往 **Deployments** 选项卡，点击 **Create deployment** (或 Retry deployment) 触发重新构建。部署完成后即可访问。
 
-# 创建预览环境 KV (可选)
-npx wrangler kv:namespace create LINKS --preview
-```
+---
 
-执行上述命令后，会得到 `id`，请将其填入项目根目录的 `wrangler.toml` 文件中：
+## 💻 本地开发
 
-```toml
-[[kv_namespaces]]
-binding = "LINKS"
-id = "你的_PRODUCTION_KV_ID"
-preview_id = "你的_PREVIEW_KV_ID"
-```
+如果你想在本地运行和调试：
 
-### 4. 配置管理员密钥
+1. **安装依赖**
+   ```bash
+   npm install
+   ```
 
-为了保护管理后台，请在 `wrangler.toml` 中设置 `ADMIN_KEY`：
+2. **创建本地 KV 命名空间**
+   ```bash
+   npx wrangler kv:namespace create LINKS
+   # 记录下输出的 ID，但在本地开发时主要使用 .dev.vars 或本地模拟
+   ```
 
-```toml
-[vars]
-ADMIN_KEY = "你的管理员密码"
-```
+3. **配置本地环境**
+   在项目根目录创建 `.dev.vars` 文件（不要提交到 Git）：
+   ```env
+   ADMIN_KEY=your_local_secret_password
+   ```
 
-> ⚠️ **安全提示**：在生产环境中，建议通过 Cloudflare Dashboard 的 **Settings -> Environment Variables** 进行配置，不要将密钥直接提交到代码仓库。
-
-### 5. 本地开发
-
-```bash
-npm run dev
-```
-启动后访问 `http://localhost:8788` 即可预览。
-
-### 6. 部署上线
-
-```bash
-npm run deploy
-```
+4. **启动开发服务器**
+   ```bash
+   npm run dev
+   ```
+   访问 `http://localhost:8788`。
 
 ## 📖 使用指南
 
@@ -95,40 +96,21 @@ npm run deploy
    - **访问密码**：设置后访问需验证。
    - **访问次数**：如 `10` 次后失效。
    - **过期时间**：选择快捷时间（1/3/7/30天）或指定日期。
-   - **二维码样式**：自定义二维码颜色。
 4. 点击“立即生成”。
 
 ### 管理后台
-1. 访问 `/admin.html`。
-2. 输入配置的 `ADMIN_KEY` 登录。
-3. 你可以：
-   - 查看所有短链及其原始链接、点击数、创建时间。
-   - 单个或批量删除短链。
-   - 导出或搜索数据（即将推出）。
+访问 `/admin.html`，输入你在环境变量中设置的 `ADMIN_KEY` 即可登录后台。
+- 查看所有短链列表。
+- 查看点击统计。
+- 删除或批量删除短链。
 
-## 📚 API 文档
+### API 调用
+如果你想通过 API 创建短链，需要携带鉴权 Header：
+- **Header**: `X-Admin-Key: 你的ADMIN_KEY`
+- **或者 URL 参数**: `?key=你的ADMIN_KEY`
 
-### 创建短链
-- **Endpoint**: `/api/create`
-- **Method**: `POST`
-- **Body**:
-  ```json
-  {
-    "url": "https://example.com",
-    "slug": "custom-slug",       // 可选
-    "password": "123",           // 可选
-    "maxClicks": 100,            // 可选
-    "expirationTime": 1735689600000 // 可选 (毫秒时间戳)
-  }
-  ```
+## 🤝 贡献
+欢迎提交 Issue 和 Pull Request！
 
-### 删除短链 (需鉴权)
-- **Endpoint**: `/api/delete`
-- **Method**: `POST`
-- **Headers**: `X-Admin-Key: 你的管理员密码`
-- **Body**:
-  ```json
-  {
-    "slugs": ["slug1", "slug2"]
-  }
-  ```
+## 📄 许可证
+MIT License
