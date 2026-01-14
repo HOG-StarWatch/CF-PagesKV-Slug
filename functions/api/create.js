@@ -44,6 +44,14 @@ export async function onRequestPost(context) {
     ];
 
     if (slug) {
+        // 安全检查：Slug 只能包含字母、数字、下划线和连字符
+        if (!/^[a-zA-Z0-9_-]+$/.test(slug)) {
+            return new Response(JSON.stringify({ error: "自定义短链只能包含字母、数字、下划线和连字符" }), { 
+                status: 400,
+                headers: { "Content-Type": "application/json" }
+            });
+        }
+
         if (RESERVED_SLUGS.includes(slug.toLowerCase())) {
             return new Response(JSON.stringify({ error: "此短链为系统保留，不可使用" }), { 
                 status: 400,

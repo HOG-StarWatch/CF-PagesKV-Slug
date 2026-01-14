@@ -338,22 +338,35 @@
             }
         }
 
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
         function renderTable(links) {
             const tbody = document.getElementById('linksBody');
             tbody.innerHTML = links.map(link => {
                 const date = link.created ? new Date(link.created).toLocaleString() : '-';
+                const safeSlug = escapeHtml(link.slug);
+                const safeUrl = escapeHtml(link.url);
+                
                 return `
                     <tr>
                         <td class="checkbox-cell">
-                            <input type="checkbox" class="link-checkbox" value="${link.slug}" onchange="updateSelectionState()">
+                            <input type="checkbox" class="link-checkbox" value="${safeSlug}" onchange="updateSelectionState()">
                         </td>
-                        <td><a href="/${link.slug}" target="_blank" class="slug-link">${link.slug}</a></td>
-                        <td class="url-cell" title="${link.url}">${link.url}</td>
+                        <td><a href="/${safeSlug}" target="_blank" class="slug-link">${safeSlug}</a></td>
+                        <td class="url-cell" title="${safeUrl}">${safeUrl}</td>
                         <td>${link.clicks}</td>
                         <td style="color: var(--text-sub); font-size: 0.85rem;">${date}</td>
                         <td>
                             <button class="btn-outline" style="padding: 4px 8px; font-size: 0.8rem; color: var(--danger); border-color: var(--border);" 
-                                onclick="deleteSingle('${link.slug}')">删除</button>
+                                onclick="deleteSingle('${safeSlug}')">删除</button>
                         </td>
                     </tr>
                 `;
