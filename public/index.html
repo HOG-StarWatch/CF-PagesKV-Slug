@@ -298,6 +298,11 @@
 
         <div class="advanced-options" id="advancedOptions">
             <div class="input-group">
+                <label for="adminKeyInput">管理员密钥 (私有服务必填)</label>
+                <input type="password" id="adminKeyInput" placeholder="如果您部署的是私有服务，请在此输入密钥">
+            </div>
+
+            <div class="input-group">
                 <label for="customSlug">自定义后缀 (可选)</label>
                 <input type="text" id="customSlug" placeholder="如: my-link (留空随机生成)">
             </div>
@@ -305,11 +310,6 @@
             <div class="input-group">
                 <label for="password">访问密码 (可选)</label>
                 <input type="text" id="password" placeholder="设置访问密码">
-            </div>
-
-            <div class="input-group">
-                <label for="maxClicks">访问次数限制 (可选)</label>
-                <input type="number" id="maxClicks" min="1" placeholder="达到次数后自动失效">
             </div>
 
             <div class="input-group">
@@ -355,7 +355,7 @@
     </div>
 
     <div class="footer">
-        Powered by Cloudflare Pages
+        Powered by Cloudflare Pages · <a href="/admin.html" style="color: var(--text-sub); text-decoration: none;">Admin Panel</a>
     </div>
 
     <div id="toast" class="toast">消息提示</div>
@@ -410,8 +410,8 @@
                     url,
                     slug: customSlug || undefined,
                     password: password || undefined,
-                    maxClicks: maxClicks || undefined,
-                    expirationTime: expiration ? new Date(expiration).getTime() : undefined
+                    expirationTime: expiration ? new Date(expiration).getTime() : undefined,
+                    key: adminKey || undefined // 发送 Key
                 };
 
                 const response = await fetch('/api/create', {

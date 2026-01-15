@@ -17,15 +17,21 @@ export async function onRequestGet(context) {
         const list = await env.LINKS.list({ limit, cursor });
         const keys = list.keys;
         
-        // Fetch details for each key (parallel)
-        // Note: For large datasets this might be slow, but for a simple panel it's fine.
-        // We only fetch metadata if we stored it in metadata, but we stored it in the value.
-        // Reading all values is expensive.
-        // Optimization: create.js should ideally store metadata (url, clicks, etc.) in KV metadata field.
-        // But the current implementation stores everything in the value.
-        // So we MUST read the value to get the URL.
-        
-        const details = (await Promise.all(keys.map(async (k) => {
+        // 优化：优先使用 Metadata
+        const details = await Promise.all(keys.map(async (k) => {
+            // 如果有 metadata，直接使用，节省一次 KV 读取
+            if (k.metadata) {
+                return {
+                    slug: k.name,
+                    url: k.metadata.url || 'Unknown',
+                    clicks: k.metadata.clicks || 0, // 这里的 clicks 可能是 0，因为我们不再更新它
+                    created: k.metadata.createdAt,
+                    expiration: k.expiration
+                };
+            }
+
+            // Fallback: 旧数据没有 metadata，必须读取 Value
+            // 这会导致 N+1 问题，建议迁移旧数据或接受旧数据加载慢
             const val = await env.LINKS.get(k.name);
             if (val === null) return null;
 
@@ -43,10 +49,12 @@ export async function onRequestGet(context) {
                 created: data?.createdAt,
                 expiration: k.expiration
             };
-        }))).filter(item => item !== null);
+        }));
+
+        const finalDetails = details.filter(item => item !== null);
 
         return new Response(JSON.stringify({ 
-            links: details, 
+            links: finalDetails, 
             cursor: list.cursor, 
             list_complete: list.list_complete 
         }), {

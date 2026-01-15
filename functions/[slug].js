@@ -55,33 +55,9 @@ async function handleRequest(context) {
         }
     }
 
-    // 检查访问次数限制
-    if (data.maxClicks && data.clicks >= data.maxClicks) {
-        // 销毁链接
-        await env.LINKS.delete(slug);
-        return new Response("此链接已达到最大访问次数并已失效", { status: 410 });
-    }
-
-    // 更新点击次数
-    // 注意：KV 最终一致性，高并发下计数可能不准，但做销毁逻辑只能这样
-    data.clicks = (data.clicks || 0) + 1;
-    
-    // 如果刚刚达到限制，删除 KV（或者保留但标记失效？用户要求自动销毁，所以直接删除最符合语意）
-    // 如果这一次点击导致超限，可以选择这次允许跳转然后删除，或者这次就拦截。
-    // 通常逻辑是：这次允许，然后删除。
-    // 这里我们先 put 更新，如果发现满了，下次进来就会触发上面的 delete 逻辑（或者这里直接 delete）
-    // 为了更严格的销毁：
-    if (data.maxClicks && data.clicks >= data.maxClicks) {
-        await env.LINKS.delete(slug);
-    } else {
-        // 重新写入 KV，保持原有的 expiration
-        const options = {};
-        if (data.expiresAt) {
-             // 重新计算剩余秒数，或者使用 expiration (absolute timestamp)
-             options.expiration = Math.floor(data.expiresAt / 1000);
-        }
-        await env.LINKS.put(slug, JSON.stringify(data), options);
-    }
+    // 移除点击计数更新逻辑以提升性能并防止 KV 写入额度耗尽
+    // data.clicks = (data.clicks || 0) + 1;
+    // await env.LINKS.put(...) 
 
     return Response.redirect(data.url, 302);
 }
