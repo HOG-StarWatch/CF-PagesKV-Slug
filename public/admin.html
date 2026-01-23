@@ -269,8 +269,8 @@
                     </th>
                     <th>短链 (Slug)</th>
                     <th>原始链接</th>
-                    <th>点击数</th>
                     <th>创建时间</th>
+                    <th>状态</th>
                     <th>操作</th>
                 </tr>
             </thead>
@@ -287,6 +287,7 @@
     <script>
         const API_BASE = '/api';
         let currentLinks = [];
+        let csrfToken = null;
 
         function showToast(msg, type = 'success') {
             const toast = document.getElementById('toast');
@@ -339,9 +340,11 @@
                     setTimeout(logout, 1500);
                     return;
                 }
-                
+
                 const data = await res.json();
                 currentLinks = data.links || [];
+                // 保存 CSRF Token
+                csrfToken = data.csrfToken || null;
                 
                 if (currentLinks.length > 0) {
                     renderTable(currentLinks);
@@ -373,7 +376,18 @@
                 const date = link.created ? new Date(link.created).toLocaleString() : '-';
                 const safeSlug = escapeHtml(link.slug);
                 const safeUrl = escapeHtml(link.url);
-                
+                const hasPassword = link.hasPassword;
+                const isExpired = link.expiration ? link.expiration < Date.now() / 1000 : false;
+
+                let statusBadge = '';
+                if (isExpired) {
+                    statusBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; background: rgba(239, 68, 68, 0.1); color: #ef4444; font-size: 0.75rem;">已过期</span>';
+                } else if (hasPassword) {
+                    statusBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; background: rgba(59, 130, 246, 0.1); color: #3b82f6; font-size: 0.75rem;">🔒 密码保护</span>';
+                } else {
+                    statusBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; background: rgba(16, 185, 129, 0.1); color: #10b981; font-size: 0.75rem;">公开</span>';
+                }
+
                 return `
                     <tr>
                         <td class="checkbox-cell">
@@ -382,8 +396,9 @@
                         <td><a href="/${safeSlug}" target="_blank" class="slug-link">${safeSlug}</a></td>
                         <td class="url-cell" title="${safeUrl}">${safeUrl}</td>
                         <td style="color: var(--text-sub); font-size: 0.85rem;">${date}</td>
+                        <td>${statusBadge}</td>
                         <td>
-                            <button class="btn-outline" style="padding: 4px 8px; font-size: 0.8rem; color: var(--danger); border-color: var(--border);" 
+                            <button class="btn-outline" style="padding: 4px 8px; font-size: 0.8rem; color: var(--danger); border-color: var(--border);"
                                 onclick="deleteSingle('${safeSlug}')">删除</button>
                         </td>
                     </tr>
@@ -431,20 +446,30 @@
 
         async function performDelete(slugs) {
             const key = localStorage.getItem('adminKey');
+
+            if (!csrfToken) {
+                showToast('CSRF Token 不存在，请刷新页面重试', 'error');
+                return;
+            }
+
             try {
                 const res = await fetch(`${API_BASE}/delete`, {
                     method: 'POST',
-                    headers: { 
+                    headers: {
                         'Content-Type': 'application/json',
                         'X-Admin-Key': key
                     },
-                    body: JSON.stringify({ slugs }) // Send array for batch support
+                    body: JSON.stringify({ slugs, csrfToken })
                 });
-                
+
                 if (res.ok) {
                     showToast(`成功删除 ${slugs.length} 个短链`);
+                    // 刷新列表获取新的 CSRF Token
                     loadLinks();
                     document.getElementById('selectAll').checked = false;
+                } else if (res.status === 403) {
+                    showToast('CSRF 验证失败，请刷新页面重试', 'error');
+                    loadLinks();
                 } else {
                     showToast('删除失败', 'error');
                 }

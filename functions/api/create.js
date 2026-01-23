@@ -1,69 +1,112 @@
+// 密码哈希工具函数 - 使用 SHA-256
+async function hashPassword(password) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// 统一错误响应
+function errorResponse(status, message) {
+    return new Response(JSON.stringify({ error: message }), {
+        status,
+        headers: {
+            "Content-Type": "application/json",
+            "Content-Security-Policy": "default-src 'none'; base-uri 'none'"
+        }
+    });
+}
+
+// 速率限制检查
+async function checkRateLimit(env, clientIP) {
+    const rateLimitKey = `ratelimit:${clientIP}`;
+    const now = Date.now();
+    const windowMs = 60 * 1000; // 1 分钟窗口
+    const maxRequests = 10; // 每分钟最多 10 次请求
+
+    const currentData = await env.LINKS.get(rateLimitKey);
+
+    if (!currentData) {
+        // 第一次请求
+        await env.LINKS.put(rateLimitKey, JSON.stringify({ count: 1, resetAt: now + windowMs }), { expirationTtl: 60 });
+        return true;
+    }
+
+    let data;
+    try {
+        data = JSON.parse(currentData);
+    } catch {
+        data = { count: 0, resetAt: now + windowMs };
+    }
+
+    if (data.resetAt < now) {
+        // 窗口已过期，重置计数
+        await env.LINKS.put(rateLimitKey, JSON.stringify({ count: 1, resetAt: now + windowMs }), { expirationTtl: 60 });
+        return true;
+    }
+
+    if (data.count >= maxRequests) {
+        return false;
+    }
+
+    // 增加计数
+    data.count++;
+    await env.LINKS.put(rateLimitKey, JSON.stringify(data), { expirationTtl: 60 });
+    return true;
+}
+
 export async function onRequestPost(context) {
   try {
     const { request, env } = context;
-    
-    // --- 私有化配置开始 ---
-    // 如果设置了 ADMIN_KEY，则开启私有化模式，创建链接需要鉴权
-    // 若要取消私有化（公开服务），请在 Cloudflare 后台删除 ADMIN_KEY 环境变量，或将其注释掉
-    if (env.ADMIN_KEY) {
-        const authHeader = request.headers.get('X-Admin-Key');
-        const urlKey = new URL(request.url).searchParams.get('key');
-        
-        // 我们也允许从 JSON body 中读取 key，但这需要先解析 body
-        // 为了方便，我们先假设 body 还没读取，稍后读取时再检查（或者这里先不检查 body 里的 key）
-        // 这里主要检查 header 和 url query
-        
-        // 注意：前端可能把 key 放在 body 里，所以我们稍后解析 body 时再做一次最终检查
-        // 但如果 key 必须在 header/query 里，可以在这里拦截
-        
-        // 策略：我们允许 Header, Query, 或 Body 中的 key。
-        // 由于 body 只能读一次，我们留到后面统一检查。
+
+    // 速率限制检查
+    // 优先从 CF-Connecting-IP 获取 IP（Cloudflare 专用），其次使用 CF-Pseudo-IPv4 或 CF-Ray
+    const clientIP = request.headers.get('CF-Connecting-IP') ||
+                       request.headers.get('CF-Pseudo-IPv4') ||
+                       request.headers.get('CF-Ray')?.split('-')[0] ||
+                       'unknown';
+
+    // 公开服务模式下（无 ADMIN_KEY）才启用速率限制
+    if (!env.ADMIN_KEY && !await checkRateLimit(env, clientIP)) {
+      return errorResponse(429, "Too many requests. Please try again later.");
     }
-    // --- 私有化配置结束 ---
 
     if (!env.LINKS) {
-      return new Response(JSON.stringify({ error: "KV binding 'LINKS' not found." }), { 
-        status: 500,
-        headers: { "Content-Type": "application/json" }
-      });
+      return errorResponse(500, "KV binding 'LINKS' not found.");
     }
 
     const body = await request.json();
     const { url, slug: customSlug, password, expirationTime, key: bodyKey } = body;
 
     // --- 私有化鉴权 ---
+    // 只允许从 Header 获取密钥，禁止 URL 参数传递（避免日志泄露）
     if (env.ADMIN_KEY) {
-        const providedKey = request.headers.get('X-Admin-Key') || new URL(request.url).searchParams.get('key') || bodyKey;
-        if (providedKey !== env.ADMIN_KEY) {
-            return new Response(JSON.stringify({ error: "Unauthorized: Private instance. Please provide correct Admin Key." }), { 
-                status: 401,
-                headers: { "Content-Type": "application/json" }
-            });
+        const providedKey = request.headers.get('X-Admin-Key') || bodyKey;
+        if (!providedKey || providedKey !== env.ADMIN_KEY) {
+            return errorResponse(401, "Unauthorized: Invalid or missing Admin Key");
         }
     }
     // -----------------
-    
+
     if (!url) {
-      return new Response(JSON.stringify({ error: "Missing 'url' field" }), { 
-        status: 400,
-        headers: { "Content-Type": "application/json" }
-      });
+      return errorResponse(400, "Missing 'url' field");
     }
 
     try {
       const parsedUrl = new URL(url);
       const currentOrigin = new URL(request.url).origin;
+
+      // 检查 URL 协议是否为 http 或 https
+      if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+        return errorResponse(400, "URL must use HTTP or HTTPS protocol");
+      }
+
       if (parsedUrl.origin === currentOrigin) {
-        return new Response(JSON.stringify({ error: "Cannot shorten a URL from the same domain (recursive loop risk)" }), { 
-            status: 400,
-            headers: { "Content-Type": "application/json" }
-        });
+        return errorResponse(400, "Cannot shorten a URL from the same domain (recursive loop risk)");
       }
     } catch (e) {
-      return new Response(JSON.stringify({ error: "Invalid URL format" }), { 
-        status: 400,
-        headers: { "Content-Type": "application/json" }
-      });
+      return errorResponse(400, "Invalid URL format");
     }
 
     // 生成或验证 Slug
@@ -75,62 +118,58 @@ export async function onRequestPost(context) {
     ];
 
     if (slug) {
-        // 安全检查：Slug 只能包含字母、数字、下划线和连字符
+        // 安全检查：Slug 只能包含字母、数字、下划线和连字符，且长度限制
+        if (slug.length > 64) {
+            return errorResponse(400, "Slug must be 64 characters or less");
+        }
         if (!/^[a-zA-Z0-9_-]+$/.test(slug)) {
-            return new Response(JSON.stringify({ error: "自定义短链只能包含字母、数字、下划线和连字符" }), { 
-                status: 400,
-                headers: { "Content-Type": "application/json" }
-            });
+            return errorResponse(400, "Slug can only contain letters, numbers, underscores and hyphens");
         }
 
         if (RESERVED_SLUGS.includes(slug.toLowerCase())) {
-            return new Response(JSON.stringify({ error: "此短链为系统保留，不可使用" }), { 
-                status: 400,
-                headers: { "Content-Type": "application/json" }
-            });
+            return errorResponse(400, "This slug is reserved for system use");
         }
 
         // 检查自定义 Slug 是否已存在
         const existing = await env.LINKS.get(slug);
         if (existing) {
-            return new Response(JSON.stringify({ error: "自定义短链已被占用" }), { 
-                status: 409,
-                headers: { "Content-Type": "application/json" }
-            });
+            return errorResponse(409, "Custom slug is already taken");
         }
     } else {
-        // 生成随机 Slug
-        const generateSlug = (length = 6) => {
+        // 生成随机 Slug - 使用加密安全的随机数生成器
+        const generateSecureSlug = (length = 6) => {
             const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            const randomValues = new Uint32Array(length);
+            crypto.getRandomValues(randomValues);
             let result = '';
             for (let i = 0; i < length; i++) {
-                result += chars.charAt(Math.floor(Math.random() * chars.length));
+                result += chars[randomValues[i] % chars.length];
             }
             return result;
         };
 
-        slug = generateSlug();
+        slug = generateSecureSlug();
         let retries = 5;
         while (retries > 0) {
             const existing = await env.LINKS.get(slug);
             if (!existing) break;
-            slug = generateSlug();
+            slug = generateSecureSlug();
             retries--;
         }
 
         if (retries === 0) {
-            return new Response(JSON.stringify({ error: "Failed to generate unique slug" }), { 
-                status: 503,
-                headers: { "Content-Type": "application/json" }
-            });
+            return errorResponse(503, "Failed to generate unique slug");
         }
     }
+
+    // 哈希密码（如果设置了密码）
+    const hashedPassword = password ? await hashPassword(password) : null;
 
     // 构建存储对象
     const data = {
         url,
         slug,
-        password,
+        password: hashedPassword,
         createdAt: Date.now(),
         expiresAt: expirationTime || null
     };
@@ -141,7 +180,7 @@ export async function onRequestPost(context) {
     const metadata = {
         url: url,
         createdAt: data.createdAt,
-        clicks: 0 // 虽然我们移除了计数功能，但为了兼容旧结构或未来扩展，可以留个字段
+        hasPassword: !!hashedPassword
     };
 
     const options = {
@@ -154,14 +193,11 @@ export async function onRequestPost(context) {
 
     await env.LINKS.put(slug, JSON.stringify(data), options);
 
-    return new Response(JSON.stringify(data), { 
+    return new Response(JSON.stringify(data), {
         status: 200,
         headers: { "Content-Type": "application/json" }
     });
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), { 
-        status: 500,
-        headers: { "Content-Type": "application/json" }
-    });
+    return errorResponse(500, err.message);
   }
 }

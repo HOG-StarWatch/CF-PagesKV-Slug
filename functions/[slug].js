@@ -1,3 +1,12 @@
+// 密码哈希工具函数 - 使用 SHA-256
+async function hashPassword(password) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(password);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 export async function onRequestGet(context) {
     return handleRequest(context);
 }
@@ -20,7 +29,7 @@ async function handleRequest(context) {
         // 短链不存在，尝试加载静态资源
         const asset = await context.next();
         if (asset.status === 404) {
-             return new Response("Short URL not found or expired", { status: 404 });
+             return new Response("Short URL not found", { status: 404 });
         }
         return asset;
     }
@@ -37,27 +46,49 @@ async function handleRequest(context) {
         data = { url: value, clicks: 0, createdAt: Date.now() };
     }
 
-    // 检查密码
+    // 检查链接是否过期
+    if (data.expiresAt) {
+        const expirationTime = data.expiresAt;
+        const currentTime = Date.now();
+
+        // expirationAt 是毫秒时间戳，比较
+        if (currentTime > expirationTime) {
+            return new Response("This short URL has expired", { status: 410 });
+        }
+    }
+
+    // 检查密码（使用 SHA-256 哈希验证）
     if (data.password) {
         let providedPassword = null;
-        
+
         if (request.method === 'POST') {
             const formData = await request.formData();
             providedPassword = formData.get('password');
         }
 
-        if (providedPassword !== data.password) {
-            // 返回输入密码页面
-            const errorMsg = request.method === 'POST' ? '<p style="color: #ff4d4f;">密码错误，请重试</p>' : '';
-            return new Response(renderPasswordPage(slug, errorMsg), {
-                headers: { "Content-Type": "text/html;charset=UTF-8" }
+        // 哈希用户提供的密码并与存储的哈希比较
+        if (providedPassword) {
+            const hashedPassword = await hashPassword(providedPassword);
+            if (hashedPassword !== data.password) {
+                // 返回输入密码页面
+                const errorMsg = '<p style="color: #ff4d4f;">密码错误，请重试</p>';
+                return new Response(renderPasswordPage(slug, errorMsg), {
+                    headers: {
+                        "Content-Type": "text/html;charset=UTF-8",
+                        "Content-Security-Policy": "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: https:; connect-src 'self'"
+                    }
+                });
+            }
+        } else {
+            // 未提供密码，显示密码输入页面
+            return new Response(renderPasswordPage(slug, ''), {
+                headers: {
+                    "Content-Type": "text/html;charset=UTF-8",
+                    "Content-Security-Policy": "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: https:; connect-src 'self'"
+                }
             });
         }
     }
-
-    // 移除点击计数更新逻辑以提升性能并防止 KV 写入额度耗尽
-    // data.clicks = (data.clicks || 0) + 1;
-    // await env.LINKS.put(...) 
 
     return Response.redirect(data.url, 302);
 }

@@ -1,13 +1,29 @@
+// 统一错误响应
+function errorResponse(status, message) {
+    return new Response(JSON.stringify({ error: message }), {
+        status,
+        headers: {
+            "Content-Type": "application/json",
+            "Content-Security-Policy": "default-src 'none'; base-uri 'none'"
+        }
+    });
+}
+
+// 生成 CSRF Token
+function generateCSRFToken() {
+    const array = new Uint8Array(32);
+    crypto.getRandomValues(array);
+    return Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
+}
+
 export async function onRequestGet(context) {
     const { env, request } = context;
     const url = new URL(request.url);
-    const key = url.searchParams.get('key') || request.headers.get('X-Admin-Key');
-    
+    const key = request.headers.get('X-Admin-Key');
+
+    // 只允许从 Header 获取密钥
     if (!env.ADMIN_KEY || key !== env.ADMIN_KEY) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), { 
-            status: 401,
-            headers: { "Content-Type": "application/json" }
-        });
+        return errorResponse(401, "Unauthorized: Invalid or missing Admin Key");
     }
 
     const cursor = url.searchParams.get('cursor');
@@ -16,7 +32,7 @@ export async function onRequestGet(context) {
     try {
         const list = await env.LINKS.list({ limit, cursor });
         const keys = list.keys;
-        
+
         // 优化：优先使用 Metadata
         const details = await Promise.all(keys.map(async (k) => {
             // 如果有 metadata，直接使用，节省一次 KV 读取
@@ -24,16 +40,15 @@ export async function onRequestGet(context) {
                 return {
                     slug: k.name,
                     url: k.metadata.url || 'Unknown',
-                    clicks: k.metadata.clicks || 0, // 这里的 clicks 可能是 0，因为我们不再更新它
                     created: k.metadata.createdAt,
-                    expiration: k.expiration
+                    expiration: k.expiration,
+                    hasPassword: k.metadata.hasPassword || false
                 };
             }
 
             // Fallback: 旧数据没有 metadata，必须读取 Value
-            // 这会导致 N+1 问题，建议迁移旧数据或接受旧数据加载慢
             const val = await env.LINKS.get(k.name);
-            if (val === null) return null;
+            if (val === null || val === undefined) return null;
 
             let data = {};
             try {
@@ -45,26 +60,29 @@ export async function onRequestGet(context) {
             return {
                 slug: k.name,
                 url: data?.url || '',
-                clicks: data?.clicks || 0,
                 created: data?.createdAt,
-                expiration: k.expiration
+                expiration: k.expiration,
+                hasPassword: !!data?.password
             };
         }));
 
         const finalDetails = details.filter(item => item !== null);
 
-        return new Response(JSON.stringify({ 
-            links: finalDetails, 
-            cursor: list.cursor, 
-            list_complete: list.list_complete 
+        // 生成并返回 CSRF Token
+        const csrfToken = generateCSRFToken();
+        // 存储 CSRF Token 到 KV (有效期 1 小时)
+        await env.LINKS.put(`csrf:${csrfToken}`, 'valid', { expirationTtl: 3600 });
+
+        return new Response(JSON.stringify({
+            links: finalDetails,
+            cursor: list.cursor,
+            list_complete: list.list_complete,
+            csrfToken
         }), {
             headers: { "Content-Type": "application/json" }
         });
 
     } catch (err) {
-        return new Response(JSON.stringify({ error: err.message }), { 
-            status: 500, 
-            headers: { "Content-Type": "application/json" }
-        });
+        return errorResponse(500, err.message);
     }
 }
