@@ -9,13 +9,6 @@ function errorResponse(status, message) {
     });
 }
 
-// 生成 CSRF Token
-function generateCSRFToken() {
-    const array = new Uint8Array(32);
-    crypto.getRandomValues(array);
-    return Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
-}
-
 export async function onRequestGet(context) {
     const { env, request } = context;
     const url = new URL(request.url);
@@ -68,16 +61,10 @@ export async function onRequestGet(context) {
 
         const finalDetails = details.filter(item => item !== null);
 
-        // 生成并返回 CSRF Token
-        const csrfToken = generateCSRFToken();
-        // 存储 CSRF Token 到 KV (有效期 1 小时)
-        await env.LINKS.put(`csrf:${csrfToken}`, 'valid', { expirationTtl: 3600 });
-
         return new Response(JSON.stringify({
             links: finalDetails,
             cursor: list.cursor,
-            list_complete: list.list_complete,
-            csrfToken
+            list_complete: list.list_complete
         }), {
             headers: { "Content-Type": "application/json" }
         });

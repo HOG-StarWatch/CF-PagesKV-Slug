@@ -7,451 +7,780 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔗</text></svg>">
     <style>
         :root {
+            --bg: #f4f6fb;
+            --bg-dark: #0f172a;
+            --surface: rgba(255, 255, 255, 0.92);
+            --surface-dark: rgba(15, 23, 42, 0.85);
+            --border: rgba(15, 23, 42, 0.08);
+            --border-dark: rgba(148, 163, 184, 0.25);
+            --text: #0f172a;
+            --text-muted: #475569;
+            --text-dark: #e2e8f0;
+            --text-muted-dark: #94a3b8;
             --primary: #6366f1;
-            --primary-hover: #4f46e5;
-            --bg-gradient: linear-gradient(135deg, #eef2f3 0%, #8e9eab 100%);
-            --card-bg: rgba(255, 255, 255, 0.9);
-            --text-main: #374151;
-            --text-sub: #6b7280;
-            --border: #d1d5db;
-            --shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            --primary-dark: #a5b4fc;
             --danger: #ef4444;
-            --danger-hover: #dc2626;
-            --radius: 12px;
+            --radius: 16px;
+            --shadow: 0 20px 60px rgba(15, 23, 42, 0.12);
         }
 
         @media (prefers-color-scheme: dark) {
             :root {
-                --primary: #818cf8;
-                --primary-hover: #6366f1;
-                --bg-gradient: linear-gradient(135deg, #1f2937 0%, #111827 100%);
-                --card-bg: rgba(31, 41, 55, 0.9);
-                --text-main: #f3f4f6;
-                --text-sub: #9ca3af;
-                --border: #4b5563;
-                --shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-                --danger: #f87171;
-                --danger-hover: #ef4444;
+                --bg: #020617;
+                --surface: var(--surface-dark);
+                --border: var(--border-dark);
+                --text: var(--text-dark);
+                --text-muted: var(--text-muted-dark);
+                --shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
             }
+        }
+
+        * {
+            box-sizing: border-box;
         }
 
         body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background: var(--bg-gradient);
-            color: var(--text-main);
             margin: 0;
             min-height: 100vh;
-            padding: 2rem;
-            backdrop-filter: blur(5px);
+            font-family: 'Inter', 'HarmonyOS Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            background: radial-gradient(circle at top, rgba(99, 102, 241, 0.25), transparent 45%),
+                        radial-gradient(circle at 20% 20%, rgba(236, 72, 153, 0.18), transparent 40%),
+                        var(--bg);
+            color: var(--text);
+            padding: clamp(1rem, 2vw, 3rem);
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            background: var(--card-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+        .app-shell {
+            width: min(1100px, 100%);
+        }
+
+        .panel {
+            background: var(--surface);
             border-radius: var(--radius);
             box-shadow: var(--shadow);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            overflow: hidden;
-            min-height: 400px;
-            transition: transform 0.3s ease;
+            border: 1px solid var(--border);
+            padding: clamp(1.5rem, 3vw, 3rem);
         }
 
-        .login-box {
-            max-width: 400px;
-            margin: 10vh auto;
-            padding: 3rem;
+        .auth-panel {
+            max-width: 420px;
+            margin: 0 auto;
             text-align: center;
         }
 
-        .header {
-            padding: 1.5rem 2rem;
-            border-bottom: 1px solid var(--border);
+        .auth-panel h1 {
+            margin-bottom: 0.5rem;
+            font-size: 1.75rem;
+        }
+
+        .auth-panel p {
+            margin-top: 0;
+            color: var(--text-muted);
+        }
+
+        .dashboard {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(0,0,0,0.02);
+            flex-direction: column;
+            gap: 1.5rem;
         }
 
-        .header h1 {
-            margin: 0;
-            font-size: 1.5rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, var(--primary), #ec4899);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        input[type="password"] {
+        input[type="password"],
+        input[type="text"] {
             width: 100%;
-            padding: 0.875rem 1rem;
-            margin: 1rem 0;
-            border-radius: 8px;
             border: 1px solid var(--border);
-            background: rgba(255, 255, 255, 0.5);
-            color: var(--text-main);
-            box-sizing: border-box;
+            border-radius: 12px;
+            padding: 0.95rem 1.1rem;
             font-size: 1rem;
-            transition: all 0.2s;
-        }
-        
-        @media (prefers-color-scheme: dark) {
-            input[type="password"] {
-                background: rgba(0, 0, 0, 0.2);
-            }
+            background: rgba(99, 102, 241, 0.04);
+            transition: border 0.2s ease, box-shadow 0.2s ease;
+            color: var(--text);
         }
 
-        input[type="password"]:focus {
-            background: var(--card-bg);
-            border-color: var(--primary);
+        input[type="password"]:focus,
+        input[type="text"]:focus {
+            border-color: rgba(99, 102, 241, 0.5);
             box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
             outline: none;
+            background: rgba(255, 255, 255, 0.35);
         }
 
-        button {
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
+        .btn-primary,
+        .btn-outline,
+        .btn-danger,
+        .btn-ghost {
             border: none;
+            border-radius: 999px;
+            padding: 0.7rem 1.4rem;
+            font-size: 0.95rem;
+            font-weight: 600;
             cursor: pointer;
-            font-weight: 500;
-            transition: all 0.2s;
-            font-size: 0.9rem;
+            transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
         }
 
         .btn-primary {
-            background: var(--primary);
-            color: white;
-            padding: 0.75rem 1.5rem;
+            background: linear-gradient(120deg, #6366f1, #a855f7);
+            color: #fff;
             width: 100%;
-            font-size: 1rem;
+            margin-top: 1.2rem;
+            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.35);
         }
 
-        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-outline {
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text);
+        }
 
         .btn-danger {
-            background: var(--danger);
-            color: white;
+            background: rgba(239, 68, 68, 0.08);
+            color: #ef4444;
         }
-        
-        .btn-danger:hover { background: var(--danger-hover); }
-        
-        .btn-outline {
+
+        .btn-ghost {
             background: transparent;
-            border: 1px solid var(--border);
-            color: var(--text-main);
+            color: var(--text-muted);
+            padding: 0.4rem 0.8rem;
+            border-radius: 10px;
         }
-        
-        .btn-outline:hover {
-            border-color: var(--primary);
+
+        .btn-primary:hover,
+        .btn-outline:hover,
+        .btn-danger:hover,
+        .btn-ghost:hover {
+            transform: translateY(-1px);
+        }
+
+        .dashboard__header {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.25rem;
+            align-items: flex-start;
+            justify-content: space-between;
+        }
+
+        .eyebrow {
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .dashboard__header h1 {
+            margin: 0.35rem 0 0.5rem;
+            font-size: clamp(1.8rem, 3vw, 2.4rem);
+        }
+
+        .dashboard__header p {
+            margin: 0;
+            color: var(--text-muted);
+            max-width: 540px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+        }
+
+        .stat-card {
+            padding: 1.2rem 1.4rem;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            background: rgba(99, 102, 241, 0.04);
+        }
+
+        .stat-card h2 {
+            margin: 0.35rem 0;
+            font-size: 2.1rem;
+        }
+
+        .stat-card span {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .control-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .search-wrap {
+            flex: 1 1 260px;
+            position: relative;
+        }
+
+        .search-wrap button {
+            position: absolute;
+            right: 0.6rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.2rem;
+            display: none;
+        }
+
+        .filter-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+        }
+
+        .filter-pills button {
+            border-radius: 999px;
+            border: 1px solid transparent;
+            background: rgba(99, 102, 241, 0.08);
+            color: var(--text);
+            padding: 0.45rem 1rem;
+            font-size: 0.85rem;
+        }
+
+        .filter-pills button.active {
+            background: rgba(99, 102, 241, 0.18);
+            border-color: rgba(99, 102, 241, 0.4);
             color: var(--primary);
         }
 
-        .toolbar {
-            padding: 1rem 2rem;
+        .control-actions {
             display: flex;
-            gap: 1rem;
+            gap: 0.6rem;
+            flex-wrap: wrap;
+        }
+
+        .selection-hint {
+            display: flex;
             align-items: center;
-            border-bottom: 1px solid var(--border);
+            gap: 0.5rem;
+            border-radius: 14px;
+            padding: 0.6rem 1rem;
+            background: rgba(16, 185, 129, 0.12);
+            color: #047857;
+            font-weight: 500;
+        }
+
+        .table-wrapper {
+            position: relative;
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.5);
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
+            min-width: 760px;
+        }
+
+        thead {
+            background: rgba(99, 102, 241, 0.06);
         }
 
         th, td {
-            padding: 1rem 2rem;
+            padding: 1rem 1.3rem;
             text-align: left;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid rgba(15, 23, 42, 0.05);
         }
 
-        th {
-            background: rgba(0,0,0,0.02);
-            font-weight: 600;
-            color: var(--text-sub);
-            font-size: 0.9rem;
-        }
-
-        td {
-            font-size: 0.95rem;
-        }
-
-        .slug-link {
-            color: var(--primary);
-            text-decoration: none;
-            font-weight: 500;
-        }
-
-        .url-cell {
-            max-width: 300px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            color: var(--text-sub);
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 4rem;
-            color: var(--text-sub);
+        tbody tr:hover {
+            background: rgba(99, 102, 241, 0.05);
         }
 
         .checkbox-cell {
-            width: 40px;
-            padding-right: 0;
-            text-align: center;
+            width: 48px;
         }
 
-        /* Toast */
+        .slug-link {
+            font-weight: 600;
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .slug-meta {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+        }
+
+        .url-cell {
+            max-width: 280px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text-muted);
+        }
+
+        .badge {
+            padding: 0.15rem 0.65rem;
+            border-radius: 999px;
+            font-size: 0.78rem;
+        }
+
+        .badge.active {
+            background: rgba(16, 185, 129, 0.15);
+            color: #047857;
+        }
+
+        .badge.protected {
+            background: rgba(59, 130, 246, 0.15);
+            color: #1d4ed8;
+        }
+
+        .badge.expired {
+            background: rgba(239, 68, 68, 0.15);
+            color: #b91c1c;
+        }
+
+        .empty-state,
+        .loading-state {
+            position: absolute;
+            inset: 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 0.6rem;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(4px);
+        }
+
+        .empty-state p,
+        .loading-state p {
+            margin: 0;
+            color: var(--text-muted);
+        }
+
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 3px solid rgba(99, 102, 241, 0.25);
+            border-top-color: var(--primary);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
         .toast {
             position: fixed;
-            bottom: 20px;
+            bottom: 24px;
             left: 50%;
             transform: translateX(-50%);
-            background: #10b981;
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: 50px;
-            font-size: 0.875rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            opacity: 0;
-            transition: opacity 0.3s;
-            pointer-events: none;
-            z-index: 1000;
-        }
-        .toast.error { background: #ef4444; }
-        .toast.show { opacity: 1; }
-
-        .selected-count {
+            background: #22c55e;
+            color: #fff;
+            padding: 0.8rem 1.6rem;
+            border-radius: 999px;
             font-size: 0.9rem;
-            color: var(--text-sub);
-            margin-left: auto;
+            box-shadow: 0 10px 25px rgba(34, 197, 94, 0.35);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(-5px);
+        }
+
+        .toast.error {
+            background: #ef4444;
+            box-shadow: 0 10px 25px rgba(239, 68, 68, 0.35);
+        }
+
+        @media (max-width: 720px) {
+            body {
+                padding: 1rem;
+            }
+            .table-wrapper {
+                overflow-x: auto;
+            }
+            table {
+                min-width: 640px;
+            }
         }
     </style>
 </head>
 <body>
-    <div id="login" class="container login-box">
-        <div style="margin-bottom: 2rem;">
-            <h1>CloudLink Admin</h1>
-            <p style="color: var(--text-sub);">请输入管理员密钥以继续</p>
-        </div>
-        <input type="password" id="adminKey" placeholder="Admin Key" onkeyup="if(event.key==='Enter') login()">
-        <button class="btn-primary" onclick="login()">登录</button>
+    <div class="app-shell">
+        <section id="login" class="panel auth-panel">
+            <p class="eyebrow">CloudLink · Admin</p>
+            <h1>登录控制中枢</h1>
+            <p>输入管理员密钥以管理所有短链与安全策略。</p>
+            <input type="password" id="adminKey" placeholder="Admin Key" onkeyup="if(event.key==='Enter') login()">
+            <button class="btn-primary" onclick="login()">立即登录</button>
+        </section>
+
+        <section id="panel" class="panel dashboard" style="display: none;">
+            <header class="dashboard__header">
+                <div>
+                    <p class="eyebrow">CloudLink / Realtime Ops</p>
+                    <h1>短链运营面板</h1>
+                    <p>实时查看短链状态、筛选敏感链接并通过管理员密钥执行批量操作。</p>
+                </div>
+                <div class="control-actions">
+                    <button class="btn-outline" onclick="logout()">退出登录</button>
+                </div>
+            </header>
+
+            <section class="stats-grid">
+                <article class="stat-card">
+                    <p class="eyebrow">总量</p>
+                    <h2 id="statTotal">0</h2>
+                    <span>全部短链</span>
+                </article>
+                <article class="stat-card">
+                    <p class="eyebrow">活跃</p>
+                    <h2 id="statActive">0</h2>
+                    <span>尚在有效期内</span>
+                </article>
+                <article class="stat-card">
+                    <p class="eyebrow">密码保护</p>
+                    <h2 id="statProtected">0</h2>
+                    <span>已启用访问密码</span>
+                </article>
+                <article class="stat-card">
+                    <p class="eyebrow">已过期</p>
+                    <h2 id="statExpired">0</h2>
+                    <span>需清理的链接</span>
+                </article>
+            </section>
+
+            <section class="control-panel">
+                <div class="search-wrap">
+                    <input type="text" id="searchInput" placeholder="搜索 slug、原始链接或关键字">
+                    <button type="button" id="clearSearch" aria-label="清空搜索" onclick="clearSearch()">✕</button>
+                </div>
+                <div class="filter-pills" id="filterPills">
+                    <button type="button" class="active" data-filter="all">全部</button>
+                    <button type="button" data-filter="active">活跃</button>
+                    <button type="button" data-filter="protected">密码保护</button>
+                    <button type="button" data-filter="expired">已过期</button>
+                </div>
+                <div class="control-actions">
+                    <button class="btn-outline" onclick="loadLinks()">刷新</button>
+                    <button class="btn-danger" id="batchDeleteBtn" onclick="deleteSelected()" disabled>删除已选</button>
+                </div>
+            </section>
+
+            <div id="selectionHint" class="selection-hint" style="display: none;">
+                已选中 <strong id="selectedCount">0</strong> 条短链
+            </div>
+
+            <div class="table-wrapper">
+                <table id="linksTable">
+                    <thead>
+                        <tr>
+                            <th class="checkbox-cell">
+                                <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this.checked)">
+                            </th>
+                            <th>短链</th>
+                            <th>原始链接</th>
+                            <th>创建时间</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="linksBody"></tbody>
+                </table>
+                <div id="emptyState" class="empty-state" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>暂无符合条件的短链</p>
+                </div>
+                <div id="loading" class="loading-state" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>数据同步中...</p>
+                </div>
+            </div>
+        </section>
     </div>
 
-    <div id="panel" class="container" style="display: none;">
-        <div class="header">
-            <h1>CloudLink 管理面板</h1>
-            <button class="btn-outline" onclick="logout()">退出登录</button>
-        </div>
-        
-        <div class="toolbar">
-            <button class="btn-danger" id="batchDeleteBtn" onclick="deleteSelected()" style="display: none;">
-                批量删除
-            </button>
-            <button class="btn-outline" onclick="loadLinks()">
-                刷新列表
-            </button>
-            <span class="selected-count" id="selectedCount"></span>
-        </div>
-
-        <div id="loading" style="text-align: center; padding: 2rem; color: var(--text-sub);">
-            加载中...
-        </div>
-
-        <table id="linksTable" style="display: none;">
-            <thead>
-                <tr>
-                    <th class="checkbox-cell">
-                        <input type="checkbox" id="selectAll" onclick="toggleSelectAll()">
-                    </th>
-                    <th>短链 (Slug)</th>
-                    <th>原始链接</th>
-                    <th>创建时间</th>
-                    <th>状态</th>
-                    <th>操作</th>
-                </tr>
-            </thead>
-            <tbody id="linksBody"></tbody>
-        </table>
-        
-        <div id="emptyState" class="empty-state" style="display: none;">
-            暂无短链数据
-        </div>
-    </div>
-
-    <div id="toast" class="toast">消息提示</div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
     <script>
         const API_BASE = '/api';
-        let currentLinks = [];
-        let csrfToken = null;
+        const state = {
+            links: [],
+            filtered: [],
+            filter: 'all',
+            query: '',
+            selection: new Set()
+        };
 
         function showToast(msg, type = 'success') {
             const toast = document.getElementById('toast');
             toast.textContent = msg;
-            toast.className = 'toast show ' + (type === 'error' ? 'error' : '');
-            setTimeout(() => toast.className = 'toast', 3000);
+            toast.className = 'toast show' + (type === 'error' ? ' error' : '');
+            setTimeout(() => toast.className = 'toast', 2600);
         }
 
         function login() {
             const key = document.getElementById('adminKey').value.trim();
-            if (key) {
-                localStorage.setItem('adminKey', key);
-                checkAuth();
-            }
+            if (!key) return;
+            localStorage.setItem('adminKey', key);
+            checkAuth();
         }
 
         function logout() {
             localStorage.removeItem('adminKey');
-            location.reload();
+            state.selection.clear();
+            document.getElementById('panel').style.display = 'none';
+            document.getElementById('login').style.display = 'block';
         }
 
         function checkAuth() {
             const key = localStorage.getItem('adminKey');
-            if (key) {
-                document.getElementById('login').style.display = 'none';
-                document.getElementById('panel').style.display = 'block';
-                // 首次加载时需要获取 Token
-                loadLinks(true);
+            if (!key) return;
+            document.getElementById('login').style.display = 'none';
+            document.getElementById('panel').style.display = 'flex';
+            loadLinks();
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function formatDate(timestamp) {
+            const value = Number(timestamp);
+            if (!Number.isFinite(value) || value <= 0) return '-';
+            try {
+                return new Date(value).toLocaleString();
+            } catch {
+                return '-';
             }
         }
 
-        async function loadLinks(refreshToken = false) {
+        function isExpired(link) {
+            if (!link || link.expiration === undefined || link.expiration === null) return false;
+            const exp = Number(link.expiration);
+            if (!Number.isFinite(exp)) return false;
+            return exp < Date.now() / 1000;
+        }
+
+        function getStatus(link) {
+            if (isExpired(link)) return 'expired';
+            if (link.hasPassword) return 'protected';
+            return 'active';
+        }
+
+        async function loadLinks() {
             const key = localStorage.getItem('adminKey');
-            const loading = document.getElementById('loading');
-            const table = document.getElementById('linksTable');
-            const tbody = document.getElementById('linksBody');
-            const emptyState = document.getElementById('emptyState');
+            if (!key) {
+                logout();
+                return;
+            }
 
-            loading.style.display = 'block';
-            table.style.display = 'none';
-            emptyState.style.display = 'none';
-            tbody.innerHTML = '';
-
+            toggleLoading(true);
             try {
                 const res = await fetch(`${API_BASE}/list`, {
                     headers: { 'X-Admin-Key': key }
                 });
 
                 if (res.status === 401) {
-                    showToast('Admin Key 无效或已过期', 'error');
+                    showToast('Admin Key 无效', 'error');
                     setTimeout(logout, 1500);
                     return;
                 }
 
                 const data = await res.json();
-                currentLinks = data.links || [];
-                // 只有在需要刷新 Token 时才更新，避免每次加载都覆盖
-                if (refreshToken || !csrfToken) {
-                    csrfToken = data.csrfToken || null;
-                }
-
-                if (currentLinks.length > 0) {
-                    renderTable(currentLinks);
-                    table.style.display = 'table';
-                } else {
-                    emptyState.style.display = 'block';
-                }
-            } catch (e) {
-                showToast('加载失败: ' + e.message, 'error');
+                state.links = (data.links || []).sort((a, b) => (b.created || 0) - (a.created || 0));
+                state.selection.clear();
+                applyFilters();
+            } catch (err) {
+                showToast('加载失败: ' + err.message, 'error');
             } finally {
-                loading.style.display = 'none';
-                updateSelectionState();
+                toggleLoading(false);
             }
         }
 
-        function escapeHtml(text) {
-            if (!text) return '';
-            return text
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;")
-                .replace(/'/g, "&#039;");
+        function toggleLoading(show) {
+            document.getElementById('loading').style.display = show ? 'flex' : 'none';
         }
 
-        function renderTable(links) {
+        function applyFilters() {
+            pruneSelection();
+            const query = state.query.toLowerCase();
+            const filtered = state.links.filter(link => {
+                const status = getStatus(link);
+                if (state.filter !== 'all' && status !== state.filter) return false;
+                if (!query) return true;
+                const slugHit = (link.slug || '').toLowerCase().includes(query);
+                const urlHit = (link.url || '').toLowerCase().includes(query);
+                return slugHit || urlHit;
+            });
+
+            state.filtered = filtered;
+            renderTable();
+            updateStats();
+            updateSelectionControls();
+        }
+
+        function pruneSelection() {
+            const valid = new Set(state.links.map(l => l.slug));
+            state.selection.forEach(slug => {
+                if (!valid.has(slug)) {
+                    state.selection.delete(slug);
+                }
+            });
+        }
+
+        function statusBadge(link) {
+            const status = getStatus(link);
+            const labelMap = {
+                active: '活跃',
+                protected: '密码保护',
+                expired: '已过期'
+            };
+            return `<span class="badge ${status}">${labelMap[status]}</span>`;
+        }
+
+        function renderTable() {
             const tbody = document.getElementById('linksBody');
-            tbody.innerHTML = links.map(link => {
-                const date = link.created ? new Date(link.created).toLocaleString() : '-';
+            const emptyState = document.getElementById('emptyState');
+
+            if (state.filtered.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.style.display = 'flex';
+                syncSelectAllIndicator();
+                return;
+            }
+
+            emptyState.style.display = 'none';
+
+            tbody.innerHTML = state.filtered.map(link => {
                 const safeSlug = escapeHtml(link.slug);
                 const safeUrl = escapeHtml(link.url);
-                const hasPassword = link.hasPassword;
-                const isExpired = link.expiration ? link.expiration < Date.now() / 1000 : false;
-
-                let statusBadge = '';
-                if (isExpired) {
-                    statusBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; background: rgba(239, 68, 68, 0.1); color: #ef4444; font-size: 0.75rem;">已过期</span>';
-                } else if (hasPassword) {
-                    statusBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; background: rgba(59, 130, 246, 0.1); color: #3b82f6; font-size: 0.75rem;">🔒 密码保护</span>';
-                } else {
-                    statusBadge = '<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; background: rgba(16, 185, 129, 0.1); color: #10b981; font-size: 0.75rem;">公开</span>';
-                }
-
+                const created = link.created ? formatDate(link.created) : '-';
+                const checked = state.selection.has(link.slug) ? 'checked' : '';
                 return `
                     <tr>
                         <td class="checkbox-cell">
-                            <input type="checkbox" class="link-checkbox" value="${safeSlug}" onchange="updateSelectionState()">
+                            <input type="checkbox" class="row-checkbox" data-slug="${safeSlug}" ${checked}>
                         </td>
-                        <td><a href="/${safeSlug}" target="_blank" class="slug-link">${safeSlug}</a></td>
-                        <td class="url-cell" title="${safeUrl}">${safeUrl}</td>
-                        <td style="color: var(--text-sub); font-size: 0.85rem;">${date}</td>
-                        <td>${statusBadge}</td>
                         <td>
-                            <button class="btn-outline" style="padding: 4px 8px; font-size: 0.8rem; color: var(--danger); border-color: var(--border);"
-                                onclick="deleteSingle('${safeSlug}')">删除</button>
+                            <div>
+                                <a class="slug-link" href="/${safeSlug}" target="_blank">/${safeSlug}</a>
+                                <div class="slug-meta">${link.expiration ? '到期：' + formatDate(link.expiration * 1000) : '长期有效'}</div>
+                            </div>
+                        </td>
+                        <td class="url-cell" title="${safeUrl}">${safeUrl}</td>
+                        <td>${created}</td>
+                        <td>${statusBadge(link)}</td>
+                        <td>
+                            <button class="btn-ghost delete-link" data-slug="${safeSlug}">删除</button>
                         </td>
                     </tr>
                 `;
             }).join('');
+
+            syncSelectAllIndicator();
         }
 
-        function toggleSelectAll() {
-            const checked = document.getElementById('selectAll').checked;
-            document.querySelectorAll('.link-checkbox').forEach(cb => cb.checked = checked);
-            updateSelectionState();
+        function updateStats() {
+            const total = state.links.length;
+            const expired = state.links.filter(isExpired).length;
+            const protectedCount = state.links.filter(link => link.hasPassword).length;
+            const active = total - expired;
+
+            document.getElementById('statTotal').textContent = total;
+            document.getElementById('statExpired').textContent = expired;
+            document.getElementById('statProtected').textContent = protectedCount;
+            document.getElementById('statActive').textContent = active < 0 ? 0 : active;
         }
 
-        function updateSelectionState() {
-            const selected = document.querySelectorAll('.link-checkbox:checked').length;
-            const btn = document.getElementById('batchDeleteBtn');
+        function updateSelectionControls() {
+            const count = state.selection.size;
+            const hint = document.getElementById('selectionHint');
             const countLabel = document.getElementById('selectedCount');
-            
-            if (selected > 0) {
-                btn.style.display = 'inline-block';
-                btn.textContent = `批量删除 (${selected})`;
-                countLabel.textContent = `已选 ${selected} 项`;
+            const btn = document.getElementById('batchDeleteBtn');
+
+            if (count > 0) {
+                hint.style.display = 'inline-flex';
+                countLabel.textContent = count;
+                btn.disabled = false;
+                btn.textContent = `删除已选 (${count})`;
             } else {
-                btn.style.display = 'none';
-                countLabel.textContent = '';
+                hint.style.display = 'none';
+                countLabel.textContent = '0';
+                btn.disabled = true;
+                btn.textContent = '删除已选';
             }
         }
 
+        function syncSelectAllIndicator() {
+            const selectAll = document.getElementById('selectAll');
+            if (!state.filtered.length) {
+                selectAll.checked = false;
+                selectAll.indeterminate = false;
+                return;
+            }
+
+            const selectedOnScreen = state.filtered.filter(link => state.selection.has(link.slug)).length;
+
+            if (selectedOnScreen === 0) {
+                selectAll.checked = false;
+                selectAll.indeterminate = false;
+            } else if (selectedOnScreen === state.filtered.length) {
+                selectAll.checked = true;
+                selectAll.indeterminate = false;
+            } else {
+                selectAll.checked = false;
+                selectAll.indeterminate = true;
+            }
+        }
+
+        function toggleSelectAll(checked) {
+            if (checked) {
+                state.filtered.forEach(link => state.selection.add(link.slug));
+            } else {
+                state.filtered.forEach(link => state.selection.delete(link.slug));
+            }
+            updateSelectionControls();
+            renderTable();
+        }
+
+        function handleRowSelect(slug, checked) {
+            if (!slug) return;
+            if (checked) {
+                state.selection.add(slug);
+            } else {
+                state.selection.delete(slug);
+            }
+            updateSelectionControls();
+            syncSelectAllIndicator();
+        }
+
         async function deleteSingle(slug) {
-            // 移除单一删除的确认弹窗，直接删除（或者为了安全保留一个轻量级确认？）
-            // 用户要求“减少确认弹窗”，但删除操作通常还是需要确认的。
-            // 我们可以用一个非模态的方式，或者依然保留 confirm 但文字简洁。
-            // 这里为了安全还是保留 confirm，但批量删除时只确认一次。
+            if (!slug) return;
             if (!confirm(`确认删除 /${slug} ?`)) return;
             await performDelete([slug]);
         }
 
         async function deleteSelected() {
-            const selected = Array.from(document.querySelectorAll('.link-checkbox:checked')).map(cb => cb.value);
-            if (selected.length === 0) return;
-            
-            if (!confirm(`确定要删除选中的 ${selected.length} 个短链吗？此操作不可恢复。`)) return;
-            await performDelete(selected);
+            if (!state.selection.size) return;
+            const slugs = Array.from(state.selection);
+            if (!confirm(`确定要删除选中的 ${slugs.length} 个短链吗？`)) return;
+            await performDelete(slugs);
         }
 
         async function performDelete(slugs) {
             const key = localStorage.getItem('adminKey');
-
-            if (!csrfToken) {
-                showToast('CSRF Token 不存在，请刷新页面重试', 'error');
+            if (!key) {
+                logout();
                 return;
             }
 
@@ -462,27 +791,75 @@
                         'Content-Type': 'application/json',
                         'X-Admin-Key': key
                     },
-                    body: JSON.stringify({ slugs, csrfToken })
+                    body: JSON.stringify({ slugs })
                 });
 
-                if (res.ok) {
-                    showToast(`成功删除 ${slugs.length} 个短链`);
-                    // 刷新列表并获取新的 CSRF Token
-                    loadLinks(true);
-                    document.getElementById('selectAll').checked = false;
-                } else if (res.status === 403) {
-                    showToast('CSRF 验证失败，请刷新页面重试', 'error');
-                    // 失败时也要刷新 Token
-                    loadLinks(true);
-                } else {
-                    showToast('删除失败', 'error');
+                if (res.status === 401) {
+                    showToast('Admin Key 无效', 'error');
+                    setTimeout(logout, 1500);
+                    return;
                 }
-            } catch (e) {
-                showToast('错误: ' + e.message, 'error');
+
+                if (!res.ok) {
+                    showToast('删除失败', 'error');
+                    return;
+                }
+
+                showToast(`成功删除 ${slugs.length} 个短链`);
+                state.selection.clear();
+                loadLinks();
+            } catch (err) {
+                showToast('错误: ' + err.message, 'error');
             }
         }
 
-        // Check auth on load
+        function handleSearchInput(event) {
+            state.query = event.target.value.trim().toLowerCase();
+            document.getElementById('clearSearch').style.display = state.query ? 'block' : 'none';
+            applyFilters();
+        }
+
+        function clearSearch() {
+            state.query = '';
+            const input = document.getElementById('searchInput');
+            input.value = '';
+            document.getElementById('clearSearch').style.display = 'none';
+            input.focus();
+            applyFilters();
+        }
+
+        function setFilter(filter) {
+            state.filter = filter;
+            document.querySelectorAll('#filterPills button').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.filter === filter);
+            });
+            applyFilters();
+        }
+
+        function setupControls() {
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', handleSearchInput);
+
+            const pills = document.querySelectorAll('#filterPills button');
+            pills.forEach(btn => {
+                btn.addEventListener('click', () => setFilter(btn.dataset.filter));
+            });
+
+            const tbody = document.getElementById('linksBody');
+            tbody.addEventListener('change', (event) => {
+                if (event.target.matches('.row-checkbox')) {
+                    handleRowSelect(event.target.dataset.slug, event.target.checked);
+                }
+            });
+            tbody.addEventListener('click', (event) => {
+                if (event.target.matches('.delete-link')) {
+                    deleteSingle(event.target.dataset.slug);
+                }
+            });
+        }
+
+        setupControls();
+
         if (localStorage.getItem('adminKey')) {
             checkAuth();
         }

@@ -9,18 +9,6 @@ function errorResponse(status, message) {
     });
 }
 
-// 验证 CSRF Token
-async function verifyCSRFToken(env, token) {
-    if (!token) return false;
-    const valid = await env.LINKS.get(`csrf:${token}`);
-    if (valid) {
-        // 验证后删除 Token (一次性使用)
-        await env.LINKS.delete(`csrf:${token}`);
-        return true;
-    }
-    return false;
-}
-
 export async function onRequestPost(context) {
     const { env, request } = context;
     const key = request.headers.get('X-Admin-Key');
@@ -32,12 +20,7 @@ export async function onRequestPost(context) {
 
     try {
         const body = await request.json();
-        const { slug, slugs, csrfToken } = body;
-
-        // 验证 CSRF Token
-        if (!await verifyCSRFToken(env, csrfToken)) {
-            return errorResponse(403, "CSRF Token verification failed");
-        }
+        const { slug, slugs } = body;
 
         if (slugs && Array.isArray(slugs)) {
             // Batch delete
