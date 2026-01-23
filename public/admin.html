@@ -252,7 +252,7 @@
                 批量删除
             </button>
             <button class="btn-outline" onclick="loadLinks()">
-                🔄 刷新列表
+                刷新列表
             </button>
             <span class="selected-count" id="selectedCount"></span>
         </div>
@@ -314,27 +314,28 @@
             if (key) {
                 document.getElementById('login').style.display = 'none';
                 document.getElementById('panel').style.display = 'block';
-                loadLinks();
+                // 首次加载时需要获取 Token
+                loadLinks(true);
             }
         }
 
-        async function loadLinks() {
+        async function loadLinks(refreshToken = false) {
             const key = localStorage.getItem('adminKey');
             const loading = document.getElementById('loading');
             const table = document.getElementById('linksTable');
             const tbody = document.getElementById('linksBody');
             const emptyState = document.getElementById('emptyState');
-            
+
             loading.style.display = 'block';
             table.style.display = 'none';
             emptyState.style.display = 'none';
             tbody.innerHTML = '';
-            
+
             try {
                 const res = await fetch(`${API_BASE}/list`, {
                     headers: { 'X-Admin-Key': key }
                 });
-                
+
                 if (res.status === 401) {
                     showToast('Admin Key 无效或已过期', 'error');
                     setTimeout(logout, 1500);
@@ -343,9 +344,11 @@
 
                 const data = await res.json();
                 currentLinks = data.links || [];
-                // 保存 CSRF Token
-                csrfToken = data.csrfToken || null;
-                
+                // 只有在需要刷新 Token 时才更新，避免每次加载都覆盖
+                if (refreshToken || !csrfToken) {
+                    csrfToken = data.csrfToken || null;
+                }
+
                 if (currentLinks.length > 0) {
                     renderTable(currentLinks);
                     table.style.display = 'table';
@@ -464,12 +467,13 @@
 
                 if (res.ok) {
                     showToast(`成功删除 ${slugs.length} 个短链`);
-                    // 刷新列表获取新的 CSRF Token
-                    loadLinks();
+                    // 刷新列表并获取新的 CSRF Token
+                    loadLinks(true);
                     document.getElementById('selectAll').checked = false;
                 } else if (res.status === 403) {
                     showToast('CSRF 验证失败，请刷新页面重试', 'error');
-                    loadLinks();
+                    // 失败时也要刷新 Token
+                    loadLinks(true);
                 } else {
                     showToast('删除失败', 'error');
                 }
